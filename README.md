@@ -1,6 +1,6 @@
 # InGravity
 
-**InGravity evaluates AI-proposed actions against configurable rules and records a decision before the calling system chooses what to do.**
+**InGravity evaluates AI agent-proposed actions against configurable rules and records a decision before the calling system chooses what to do.**
 
 > InGravity returns a decision; it does not execute, cancel, or intercept an external action. A connected caller must honor the decision.
 
