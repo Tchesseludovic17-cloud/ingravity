@@ -1,44 +1,52 @@
-# [Project name]
+# InGravity
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+API backend qui évalue les actions proposées par des agents IA, applique des règles configurables et enregistre les décisions.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `POST /check-action` and `POST /api/check-action` — evaluate an action
+- Optional env: `INGRAVITY_DATABASE_PATH` — SQLite file location
+- Optional env: `INGRAVITY_RULES_PATH` — JSON rules file location
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
-- DB: PostgreSQL + Drizzle ORM
+- DB: SQLite using Node.js `node:sqlite`
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Build: esbuild (CJS bundle)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/api-server/src/domain/` — action types, decisions, and risk calculation
+- `artifacts/api-server/src/config/` — rules loader and default JSON rules
+- `artifacts/api-server/src/repositories/` — SQLite persistence
+- `artifacts/api-server/src/routes/` — HTTP endpoints
+- `artifacts/api-server/README.md` — beginner-friendly French guide and API examples
+- `lib/api-spec/openapi.yaml` — API contract used to generate client types
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Rules are loaded once at server startup; restart the server after editing `config/rules.json`.
+- If an action has a matching amount rule but omits `amount`, it is held for approval rather than automatically approved.
+- SQLite is stored locally in `artifacts/api-server/data/` by default; the directory is excluded from Git.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+This first version only exposes the action-checking API. Do not add the future approval dashboard or n8n/dry-run integration until requested.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Explain created project files and how to test the API in French, in beginner-friendly terms.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The API service is routed under `/api`; the exact `/check-action` path is separately exposed as requested.
 
 ## Pointers
 

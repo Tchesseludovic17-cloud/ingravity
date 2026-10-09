@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: actions
+    description: Contrôle des actions proposées par des agents IA
 paths:
   /healthz:
     get:
@@ -24,6 +26,45 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /check-action:
+    post:
+      operationId: checkAction
+      tags: [actions]
+      summary: Évalue une action proposée
+      description: Applique les règles configurées, calcule un score de risque et enregistre la décision.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckActionRequest"
+      responses:
+        "200":
+          description: Décision prise pour l’action
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  decision:
+                    type: string
+                    enum: [approved, blocked, pending_approval]
+                  reason:
+                    type: string
+                  risk_score:
+                    type: integer
+                    minimum: 0
+                    maximum: 100
+                required:
+                  - decision
+                  - reason
+                  - risk_score
+        "400":
+          description: Corps de requête invalide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationError"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +74,30 @@ components:
           type: string
       required:
         - status
+    CheckActionRequest:
+      type: object
+      properties:
+        action_type:
+          type: string
+          minLength: 1
+          example: payment
+        amount:
+          type: number
+          minimum: 0
+          example: 1250
+        metadata:
+          type: object
+          additionalProperties: true
+          example:
+            order_id: order-123
+      required:
+        - action_type
+        - metadata
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
 

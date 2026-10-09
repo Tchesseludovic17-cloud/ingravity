@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import { checkActionHandler } from "./routes/check-action";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -29,6 +30,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// The direct path is available for the requested POST /check-action endpoint.
+app.post("/check-action", checkActionHandler);
+
+// Keep the workspace's existing /api namespace working as well.
 app.use("/api", router);
 
 export default app;

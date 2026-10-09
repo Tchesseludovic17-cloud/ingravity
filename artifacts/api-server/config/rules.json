@@ -1,0 +1,9 @@
+{
+  "rules": [
+    {
+      "action_type": "payment",
+      "max_amount": 1000,
+      "action_if_exceeded": "pending_approval"
+    }
+  ]
+}

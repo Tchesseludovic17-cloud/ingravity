@@ -1,0 +1,1 @@
+- [Orval API generation](orval-api-generation.md) — avoid duplicate response exports and include iterable DOM types in generated React clients.
