@@ -3,7 +3,8 @@
     {
       "action_type": "payment",
       "max_amount": 1000,
-      "action_if_exceeded": "pending_approval"
+      "action_if_exceeded": "pending_approval",
+      "block_at_or_above": 100000
     }
   ]
 }

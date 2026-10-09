@@ -46,6 +46,9 @@ fourni. Une requête invalide reçoit le code HTTP `400` avec un message JSON.
   `ceil((montant - limite) / limite × 100)`, plafonné à `100`.
   Par exemple, dépasser une limite de `1000` avec un montant de `1250` donne
   `25`.
+- À partir du seuil `block_at_or_above`, la décision est `blocked`, même si
+  `action_if_exceeded` demande normalement une approbation. La règle fournie
+  bloque les paiements de `100000` ou plus.
 - Si une règle de montant correspond mais que `amount` n’est pas envoyé,
   l’action est mise en attente : sans montant, la limite ne peut pas être
   vérifiée.
@@ -62,16 +65,19 @@ Le fichier `config/rules.json` contient les règles. Exemple :
     {
       "action_type": "payment",
       "max_amount": 1000,
-      "action_if_exceeded": "pending_approval"
+      "action_if_exceeded": "pending_approval",
+      "block_at_or_above": 100000
     }
   ]
 }
 ```
 
-Pour bloquer plutôt que demander une approbation, remplacez
-`pending_approval` par `blocked`. Le serveur lit le fichier au démarrage :
-redémarrez le serveur après avoir modifié les règles. Une configuration
-incorrecte empêche le serveur de démarrer et affiche l’erreur à corriger.
+Entre `max_amount` et `block_at_or_above`, `action_if_exceeded` indique si
+l’action est mise en attente ou directement bloquée. `block_at_or_above` est
+un plafond de sécurité : il doit être supérieur à `max_amount`. Le serveur lit
+le fichier au démarrage ; redémarrez-le après chaque modification. Une
+configuration incorrecte empêche le serveur de démarrer et affiche l’erreur
+à corriger.
 
 ## Où sont les éléments du projet ?
 

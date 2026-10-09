@@ -10,6 +10,7 @@ export interface ActionRule {
   action_type: string;
   max_amount: number;
   action_if_exceeded: Decision;
+  block_at_or_above?: number;
 }
 
 export interface ActionEvaluation {
@@ -38,6 +39,29 @@ export function evaluateAction(
     };
   }
 
+  const riskScore =
+    action.amount <= rule.max_amount
+      ? 0
+      : rule.max_amount === 0
+        ? 100
+        : Math.min(
+            100,
+            Math.ceil(
+              ((action.amount - rule.max_amount) / rule.max_amount) * 100,
+            ),
+          );
+
+  if (
+    rule.block_at_or_above !== undefined &&
+    action.amount >= rule.block_at_or_above
+  ) {
+    return {
+      decision: "blocked",
+      reason: `Montant ${action.amount} atteint le seuil de blocage automatique de ${rule.block_at_or_above} ; action bloquée.`,
+      riskScore,
+    };
+  }
+
   if (action.amount <= rule.max_amount) {
     return {
       decision: "approved",
@@ -45,16 +69,6 @@ export function evaluateAction(
       riskScore: 0,
     };
   }
-
-  const riskScore =
-    rule.max_amount === 0
-      ? 100
-      : Math.min(
-          100,
-          Math.ceil(
-            ((action.amount - rule.max_amount) / rule.max_amount) * 100,
-          ),
-        );
 
   return {
     decision: rule.action_if_exceeded,

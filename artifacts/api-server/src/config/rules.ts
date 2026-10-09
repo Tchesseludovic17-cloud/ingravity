@@ -23,7 +23,12 @@ function parseRule(value: unknown, index: number): ActionRule {
     throw new Error(`La règle numéro ${index + 1} doit être un objet JSON.`);
   }
 
-  const { action_type, max_amount, action_if_exceeded } = value;
+  const {
+    action_type,
+    max_amount,
+    action_if_exceeded,
+    block_at_or_above,
+  } = value;
   if (typeof action_type !== "string" || action_type.trim().length === 0) {
     throw new Error(
       `La règle numéro ${index + 1} doit définir un action_type non vide.`,
@@ -43,11 +48,22 @@ function parseRule(value: unknown, index: number): ActionRule {
       `La règle « ${action_type} » doit définir action_if_exceeded avec approved, blocked ou pending_approval.`,
     );
   }
+  if (
+    block_at_or_above !== undefined &&
+    (typeof block_at_or_above !== "number" ||
+      !Number.isFinite(block_at_or_above) ||
+      block_at_or_above <= max_amount)
+  ) {
+    throw new Error(
+      `La règle « ${action_type} » doit définir block_at_or_above comme un nombre supérieur à max_amount.`,
+    );
+  }
 
   return {
     action_type: action_type.trim(),
     max_amount,
     action_if_exceeded,
+    ...(typeof block_at_or_above === "number" ? { block_at_or_above } : {}),
   };
 }
 
