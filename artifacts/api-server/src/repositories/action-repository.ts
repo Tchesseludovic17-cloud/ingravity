@@ -21,6 +21,8 @@ export interface ActionListItem {
   createdAt: string;
 }
 
+export type ManualActionDecision = Extract<Decision, "approved" | "blocked">;
+
 const configuredDatabasePath = process.env["INGRAVITY_DATABASE_PATH"];
 const databasePath = configuredDatabasePath
   ? path.resolve(process.cwd(), configuredDatabasePath)
@@ -62,6 +64,12 @@ const listActionsStatement = database.prepare(`
   ORDER BY created_at DESC, id DESC
 `);
 
+const updatePendingActionStatement = database.prepare(`
+  UPDATE actions
+  SET decision = ?
+  WHERE id = ? AND decision = 'pending_approval'
+`);
+
 export function recordAction(
   action: ActionInput,
   evaluation: ActionEvaluation,
@@ -93,4 +101,12 @@ export function listActions(): ActionListItem[] {
       createdAt: String(row["created_at"]),
     };
   });
+}
+
+export function updatePendingActionDecision(
+  id: number,
+  decision: ManualActionDecision,
+): boolean {
+  const result = updatePendingActionStatement.run(decision, id);
+  return Number(result.changes) > 0;
 }

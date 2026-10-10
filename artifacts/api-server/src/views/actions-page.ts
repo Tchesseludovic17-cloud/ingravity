@@ -34,6 +34,17 @@ function renderActionRow(action: ActionListItem): string {
     ? escapeHtml(action.createdAt)
     : escapeHtml(dateFormatter.format(timestamp));
   const decision = decisionLabels[action.decision];
+  const controls =
+    action.decision === "pending_approval"
+      ? `<div class="action-controls">
+          <form method="post" action="/actions/${action.id}/decision">
+            <button class="button button-approve" type="submit" name="decision" value="approved" aria-label="Approuver l’action ${escapeHtml(action.actionType)}">Approuver</button>
+          </form>
+          <form method="post" action="/actions/${action.id}/decision">
+            <button class="button button-block" type="submit" name="decision" value="blocked" aria-label="Bloquer l’action ${escapeHtml(action.actionType)}">Bloquer</button>
+          </form>
+        </div>`
+      : `<span class="no-action" aria-label="Aucune action manuelle nécessaire">—</span>`;
 
   return `
     <tr>
@@ -42,13 +53,14 @@ function renderActionRow(action: ActionListItem): string {
       <td class="numeric">${amount}</td>
       <td><span class="status status-${action.decision}">${decision}</span></td>
       <td class="numeric">${action.riskScore}<span class="score-total"> / 100</span></td>
+      <td>${controls}</td>
     </tr>`;
 }
 
 export function renderActionsPage(actions: ActionListItem[]): string {
   const rows =
     actions.length === 0
-      ? `<tr><td class="empty-state" colspan="5">Aucune action enregistrée pour l'instant</td></tr>`
+      ? `<tr><td class="empty-state" colspan="6">Aucune action enregistrée pour l'instant</td></tr>`
       : actions.map(renderActionRow).join("");
 
   return `<!doctype html>
@@ -86,11 +98,20 @@ export function renderActionsPage(actions: ActionListItem[]): string {
       .status-blocked { color: #a32d35; background: #fdebed; }
       .status-pending_approval { color: #8a5700; background: #fff3d6; }
       .score-total { color: #78869a; }
+      .action-controls { display: flex; gap: 8px; }
+      .action-controls form { margin: 0; }
+      .button { border: 0; border-radius: 7px; padding: 8px 11px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+      .button:focus-visible { outline: 3px solid #314fc4; outline-offset: 2px; }
+      .button-approve { color: #176b43; background: #e6f6ed; }
+      .button-approve:hover { background: #d3efdf; }
+      .button-block { color: #a32d35; background: #fdebed; }
+      .button-block:hover { background: #fbd9dc; }
+      .no-action { color: #a1aaba; }
       .empty-state { padding: 36px 18px; color: #52627a; text-align: center; }
       @media (max-width: 680px) {
         main { width: min(100% - 24px, 1100px); margin: 28px auto; }
         .table-shell { overflow-x: auto; }
-        table { min-width: 620px; }
+        table { min-width: 760px; }
         th, td { padding: 13px 12px; }
       }
     </style>
@@ -111,6 +132,7 @@ export function renderActionsPage(actions: ActionListItem[]): string {
               <th scope="col">Montant</th>
               <th scope="col">Décision</th>
               <th scope="col">Score de risque</th>
+              <th scope="col">Action</th>
             </tr>
           </thead>
           <tbody>${rows}
