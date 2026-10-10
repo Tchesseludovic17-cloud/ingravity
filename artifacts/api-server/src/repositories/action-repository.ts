@@ -2,9 +2,22 @@ import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { getArtifactDirectory } from "../lib/paths";
-import type { ActionInput, ActionEvaluation } from "../domain/check-action";
+import type {
+  ActionEvaluation,
+  ActionInput,
+  Decision,
+} from "../domain/check-action";
 
 export interface StoredAction extends ActionInput, ActionEvaluation {
+  createdAt: string;
+}
+
+export interface ActionListItem {
+  id: number;
+  actionType: string;
+  amount?: number;
+  decision: Decision;
+  riskScore: number;
   createdAt: string;
 }
 
@@ -43,6 +56,12 @@ const insertAction = database.prepare(`
   ) VALUES (?, ?, ?, ?, ?, ?, ?)
 `);
 
+const listActionsStatement = database.prepare(`
+  SELECT id, action_type, amount, decision, risk_score, created_at
+  FROM actions
+  ORDER BY created_at DESC, id DESC
+`);
+
 export function recordAction(
   action: ActionInput,
   evaluation: ActionEvaluation,
@@ -59,4 +78,19 @@ export function recordAction(
   );
 
   return { ...action, ...evaluation, createdAt };
+}
+
+export function listActions(): ActionListItem[] {
+  return listActionsStatement.all().map((row) => {
+    const amount = row["amount"];
+
+    return {
+      id: Number(row["id"]),
+      actionType: String(row["action_type"]),
+      ...(amount === null ? {} : { amount: Number(amount) }),
+      decision: row["decision"] as Decision,
+      riskScore: Number(row["risk_score"]),
+      createdAt: String(row["created_at"]),
+    };
+  });
 }

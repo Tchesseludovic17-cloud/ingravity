@@ -1,13 +1,13 @@
 kind = "api"
-previewPath = "/api"
-title = "InGravity API"
+previewPath = "/"
+title = "InGravity"
 version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
 
 [[services]]
 localPort = 8080
 name = "API Server"
-paths = ["/api", "/check-action"]
+paths = ["/", "/api", "/check-action"]
 
 [services.development]
 run = "pnpm --filter @workspace/api-server run dev"

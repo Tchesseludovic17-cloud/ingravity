@@ -3,6 +3,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { checkActionHandler } from "./routes/check-action";
+import dashboardRouter from "./routes/dashboard";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -29,6 +30,8 @@ app.use(
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(dashboardRouter);
 
 // The direct path is available for the requested POST /check-action endpoint.
 app.post("/check-action", checkActionHandler);
