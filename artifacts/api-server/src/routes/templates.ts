@@ -1,7 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import { renameSync, writeFileSync } from "node:fs";
-import { getRulesPath, replaceActiveRules } from "../config/rules";
 import { ruleTemplates } from "../config/templates";
+import { activateRuleTemplate } from "../services/rule-management";
 
 const router = Router();
 
@@ -12,28 +11,26 @@ router.get("/templates", (_req: Request, res: Response): void => {
 router.post(
   "/templates/:id/activate",
   (req: Request, res: Response): void => {
-    const template = ruleTemplates.find(
-      (candidate) => candidate.id === req.params.id,
-    );
-    if (!template) {
+    const templateId = Array.isArray(req.params.id)
+      ? req.params.id[0]
+      : req.params.id;
+    if (!templateId) {
       res.status(404).json({ error: "Modèle de règles introuvable." });
       return;
     }
 
-    const rulesPath = getRulesPath();
-    const temporaryPath = `${rulesPath}.tmp`;
+    let template: ReturnType<typeof activateRuleTemplate>;
     try {
-      writeFileSync(
-        temporaryPath,
-        `${JSON.stringify({ rules: template.rules }, null, 2)}\n`,
-        "utf8",
-      );
-      renameSync(temporaryPath, rulesPath);
-      replaceActiveRules(template.rules);
-    } catch (error) {
+      template = activateRuleTemplate(templateId);
+    } catch {
       res.status(500).json({
         error: "Impossible d’enregistrer les règles du modèle.",
       });
+      return;
+    }
+
+    if (!template) {
+      res.status(404).json({ error: "Modèle de règles introuvable." });
       return;
     }
 

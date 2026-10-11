@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { getArtifactDirectory } from "../lib/paths";
 import {
@@ -175,6 +175,26 @@ export function findRule(actionType: string): ActionRule | undefined {
   return actionRules.find((rule) => rule.action_type === actionType);
 }
 
-export function replaceActiveRules(rules: ActionRule[]): void {
+export function getActiveRules(): ActionRule[] {
+  return actionRules.map((rule) => ({
+    ...rule,
+    ...(rule.sensitive_keywords
+      ? { sensitive_keywords: [...rule.sensitive_keywords] }
+      : {}),
+  }));
+}
+
+export function saveActiveRules(rawRules: unknown): ActionRule[] {
+  const rules = parseRules(rawRules);
+  const rulesPath = getRulesPath();
+  const temporaryPath = `${rulesPath}.tmp`;
+
+  writeFileSync(
+    temporaryPath,
+    `${JSON.stringify({ rules }, null, 2)}\n`,
+    "utf8",
+  );
+  renameSync(temporaryPath, rulesPath);
   actionRules = rules;
+  return getActiveRules();
 }

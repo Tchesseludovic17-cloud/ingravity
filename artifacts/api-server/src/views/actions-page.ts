@@ -85,6 +85,10 @@ export function renderActionsPage(actions: ActionListItem[]): string {
       .eyebrow { margin: 0 0 8px; color: #52627a; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
       h1 { margin: 0; color: #101828; font-size: clamp(26px, 4vw, 34px); letter-spacing: -.03em; }
       .intro { margin: 8px 0 0; color: #52627a; font-size: 15px; }
+      .page-nav { display: flex; gap: 10px; margin-top: 18px; }
+      .page-nav a { display: inline-flex; align-items: center; min-height: 38px; padding: 0 13px; border: 1px solid #d9e1ed; border-radius: 8px; color: #344b74; background: #fff; font-size: 14px; font-weight: 650; text-decoration: none; }
+      .page-nav a[aria-current="page"] { color: #fff; border-color: #3157c8; background: #3157c8; }
+      .page-nav a:focus-visible { outline: 3px solid #314fc4; outline-offset: 2px; }
       .table-shell { overflow: hidden; border: 1px solid #e0e6ef; border-radius: 12px; background: #fff; box-shadow: 0 8px 24px rgb(22 34 51 / 5%); }
       table { width: 100%; border-collapse: collapse; text-align: left; }
       th, td { padding: 15px 18px; border-bottom: 1px solid #edf0f5; }
@@ -122,6 +126,10 @@ export function renderActionsPage(actions: ActionListItem[]): string {
         <p class="eyebrow">InGravity</p>
         <h1>Actions enregistrées</h1>
         <p class="intro">Historique des décisions prises par le moteur de règles.</p>
+        <nav class="page-nav" aria-label="Navigation principale">
+          <a href="/" aria-current="page">Actions</a>
+          <a href="/rules">Règles actives</a>
+        </nav>
       </header>
       <section class="table-shell" aria-label="Liste des actions">
         <table>
