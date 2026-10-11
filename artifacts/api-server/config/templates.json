@@ -1,0 +1,50 @@
+[
+  {
+    "id": "payments",
+    "name": "Paiements",
+    "description": "Approbation au-delà de 1 000 et blocage automatique à partir de 100 000.",
+    "rules": [
+      {
+        "action_type": "payment",
+        "max_amount": 1000,
+        "action_if_exceeded": "pending_approval",
+        "block_at_or_above": 100000
+      }
+    ]
+  },
+  {
+    "id": "emails",
+    "name": "Emails",
+    "description": "Demande une approbation au-delà de 20 envois ou si un mot-clé sensible est détecté.",
+    "rules": [
+      {
+        "action_type": "email",
+        "max_sends": 20,
+        "send_count_field": "send_count",
+        "sensitive_keywords": [
+          "password",
+          "secret",
+          "confidential",
+          "api key"
+        ],
+        "keyword_field": "content",
+        "action_if_exceeded": "pending_approval"
+      }
+    ]
+  },
+  {
+    "id": "file-access",
+    "name": "Accès fichiers",
+    "description": "Bloque la suppression de fichiers et met en attente le partage externe.",
+    "rules": [
+      {
+        "action_type": "file_delete",
+        "action_if_matched": "blocked"
+      },
+      {
+        "action_type": "file_share_external",
+        "action_if_matched": "pending_approval"
+      }
+    ]
+  }
+]
