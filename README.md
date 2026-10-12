@@ -40,13 +40,16 @@ The API's `reason` text is currently returned in French. For this request, the r
 
 This is an API backend, not an approval interface. It does not connect to payment systems or other external tools.
 
-### Phase 2 — Dashboard: planned, not implemented
+### Phase 2 — Dashboard: basic version available
 
-The planned dashboard will show pending actions and decision history, and provide a simple form for editing rules. Manual approve/block controls are not available yet.
+- `/` displays the action history, newest first, with manual approve/block controls for pending actions.
+- `/rules` displays the active rules, lets users add or replace simple amount rules, and activates the three predefined templates.
+- The dashboard does not require authentication yet and is intended for local testing.
 
-### Phase 3 — n8n integration and dry-run mode: planned, not implemented
+### Phase 3 — n8n integration and dry-run mode: in progress
 
-The planned n8n connector will check actions before real execution. A dry-run mode will simulate an action without carrying it out. Neither the connector nor the simulator exists yet.
+- A local-installable **InGravity Guard** n8n node is available in [`integrations/n8n-nodes-ingravity`](integrations/n8n-nodes-ingravity/README.md). It continues only for `approved` and stops for `blocked` or `pending_approval`.
+- Dry-run mode, which would simulate an action without carrying it out, is not implemented yet.
 
 ## Run locally (self-hosted)
 
@@ -96,7 +99,7 @@ The planned n8n connector will check actions before real execution. A dry-run mo
 ### Local data and configuration
 
 - The default SQLite file is `artifacts/api-server/data/ingravity.sqlite`. The `data/` directory is excluded from Git.
-- Edit `artifacts/api-server/config/rules.json` to change thresholds. Restart the API for rule changes to take effect.
+- Use `http://localhost:8080/rules` to add or replace simple rules and activate templates; those changes take effect immediately. If you edit `artifacts/api-server/config/rules.json` directly, restart the API to load the changes.
 - `INGRAVITY_DATABASE_PATH` optionally overrides the SQLite file path.
 - `INGRAVITY_RULES_PATH` optionally overrides the JSON rules file path.
 - `PORT` is required when starting the server directly; the example uses `8080`.

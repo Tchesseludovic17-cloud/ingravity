@@ -1,0 +1,31 @@
+{
+  "name": "n8n-nodes-ingravity",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An n8n approval gate that checks proposed actions with the InGravity API.",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "pnpm run build && node --test tests/*.test.cjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "nodes": [
+      "dist/nodes/InGravity/InGravity.node.js"
+    ]
+  },
+  "peerDependencies": {
+    "n8n-workflow": ">=1.0.0 <3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "n8n-workflow": "2.16.0",
+    "typescript": "^5.9.3"
+  }
+}

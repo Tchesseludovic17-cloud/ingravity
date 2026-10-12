@@ -10,6 +10,11 @@
       "action_type": "refund",
       "max_amount": 100,
       "action_if_exceeded": "pending_approval"
+    },
+    {
+      "action_type": "Refud",
+      "max_amount": 700,
+      "action_if_exceeded": "pending_approval"
     }
   ]
 }
