@@ -5,6 +5,7 @@ import {
   type ActionInput,
 } from "../domain/check-action";
 import { recordAction } from "../repositories/action-repository";
+import { requireApiKey } from "../middlewares/api-key";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -67,6 +68,6 @@ export function checkActionHandler(
 }
 
 const router = Router();
-router.post("/check-action", checkActionHandler);
+router.post("/check-action", requireApiKey, checkActionHandler);
 
 export default router;

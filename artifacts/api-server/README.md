@@ -8,6 +8,40 @@ Cette version ne contient volontairement ni écran de tableau de bord, ni
 approbation manuelle, ni connecteur n8n. Le code est séparé en modules pour que
 ces ajouts puissent être faits plus tard sans réécrire l’API.
 
+## Authentification par clé API
+
+Les appels qui évaluent une action ou modifient des données exigent une clé
+partagée dans l’en-tête `X-API-Key` : `POST /check-action`,
+`POST /api/check-action`, les routes `POST` du tableau de bord et
+`POST /api/templates/:id/activate`. Une clé absente ou incorrecte reçoit
+`401 Unauthorized` et l’action n’est ni évaluée ni enregistrée.
+
+Définissez explicitement la clé avec la variable d’environnement
+`INGRAVITY_API_KEY` avant de démarrer le serveur :
+
+```sh
+export INGRAVITY_API_KEY='remplacez-cette-valeur-par-une-cle-secrete'
+PORT=8080 pnpm --filter @workspace/api-server run dev
+```
+
+Si `INGRAVITY_API_KEY` n’est pas définie, le serveur génère automatiquement une
+clé cryptographiquement aléatoire de 32 octets et la conserve dans
+`artifacts/api-server/data/api-key`. Ce fichier est exclu de Git et reçoit les
+permissions `600`. La clé est réutilisée aux démarrages suivants. Pour utiliser
+un autre emplacement, définissez `INGRAVITY_API_KEY_FILE`.
+
+Exemple de requête authentifiée :
+
+```sh
+curl -X POST http://localhost:8080/check-action \
+  -H 'X-API-Key: votre-cle-api' \
+  -H 'Content-Type: application/json' \
+  -d '{"action_type":"payment","amount":1250,"metadata":{"order_id":"order-123"}}'
+```
+
+Les vues en lecture seule `GET /`, `GET /rules`, `GET /api/healthz` et
+`GET /api/templates` restent accessibles sans clé pour le moment.
+
 ## Tester l’API
 
 Le service accepte les deux adresses suivantes :
@@ -19,6 +53,7 @@ Exemple de requête :
 
 ```sh
 curl -X POST http://localhost:80/check-action \
+  -H 'X-API-Key: votre-cle-api' \
   -H 'Content-Type: application/json' \
   -d '{"action_type":"payment","amount":1250,"metadata":{"order_id":"order-123"}}'
 ```

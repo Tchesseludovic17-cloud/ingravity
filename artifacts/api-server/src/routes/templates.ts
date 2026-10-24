@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { ruleTemplates } from "../config/templates";
 import { activateRuleTemplate } from "../services/rule-management";
+import { requireApiKey } from "../middlewares/api-key";
 
 const router = Router();
 
@@ -10,6 +11,7 @@ router.get("/templates", (_req: Request, res: Response): void => {
 
 router.post(
   "/templates/:id/activate",
+  requireApiKey,
   (req: Request, res: Response): void => {
     const templateId = Array.isArray(req.params.id)
       ? req.params.id[0]

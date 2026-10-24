@@ -40,6 +40,30 @@ The API's `reason` text is currently returned in French. For this request, the r
 
 This is an API backend, not an approval interface. It does not connect to payment systems or other external tools.
 
+### API authentication
+
+Action evaluation and all data-changing routes require a shared API key in the
+`X-API-Key` header. Set `INGRAVITY_API_KEY` before starting the server:
+
+```sh
+export INGRAVITY_API_KEY='replace-with-a-strong-secret'
+PORT=8080 pnpm --filter @workspace/api-server run dev
+```
+
+When the variable is not set, the server generates a strong key automatically
+and stores it in `artifacts/api-server/data/api-key` with file permissions
+`600`. That path is ignored by Git. `INGRAVITY_API_KEY_FILE` can override the
+storage location. Read-only dashboard views remain public for now.
+
+Authenticated request example:
+
+```sh
+curl -X POST http://localhost:8080/check-action \
+  -H 'X-API-Key: your-api-key' \
+  -H 'Content-Type: application/json' \
+  -d '{"action_type":"payment","amount":1250,"metadata":{"order_id":"order-123"}}'
+```
+
 ### Phase 2 — Dashboard: basic version available
 
 - `/` displays the action history, newest first, with manual approve/block controls for pending actions.

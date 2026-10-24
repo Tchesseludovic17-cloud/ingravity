@@ -12,6 +12,7 @@ import {
 } from "../services/rule-management";
 import { renderActionsPage } from "../views/actions-page";
 import { renderRulesPage } from "../views/rules-page";
+import { requireApiKey } from "../middlewares/api-key";
 
 const router: IRouter = Router();
 
@@ -43,7 +44,7 @@ router.get("/rules", (req, res): void => {
     .send(renderRulesPage(getActiveRules(), ruleTemplates, message));
 });
 
-router.post("/rules", (req, res): void => {
+router.post("/rules", requireApiKey, (req, res): void => {
   const body: unknown = req.body;
   const actionType =
     isRecord(body) && typeof body["action_type"] === "string"
@@ -97,7 +98,7 @@ router.post("/rules", (req, res): void => {
   res.redirect(303, "/rules?notice=rule-saved");
 });
 
-router.post("/rules/templates/:id/activate", (req, res): void => {
+router.post("/rules/templates/:id/activate", requireApiKey, (req, res): void => {
   const templateId = Array.isArray(req.params.id)
     ? req.params.id[0]
     : req.params.id;
@@ -123,7 +124,7 @@ router.post("/rules/templates/:id/activate", (req, res): void => {
   res.redirect(303, "/rules?notice=template-activated");
 });
 
-router.post("/actions/:id/decision", (req, res): void => {
+router.post("/actions/:id/decision", requireApiKey, (req, res): void => {
   const rawId = Array.isArray(req.params.id)
     ? req.params.id[0]
     : req.params.id;
