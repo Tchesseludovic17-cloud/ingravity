@@ -13,6 +13,7 @@ const nodeDetails = {
 function createContext(response, overrides = {}) {
   const parameters = {
     apiBaseUrl: "https://ingravity.example/",
+    apiKey: "test-api-key",
     action_type: "payment",
     include_amount: true,
     amount: 500,
@@ -60,6 +61,7 @@ test("approved passes the item forward and posts the API payload", async () => {
     metadata: { source: "n8n-test" },
   });
   assert.equal(requests[0].url, "https://ingravity.example/check-action");
+  assert.equal(requests[0].headers["X-API-Key"], "test-api-key");
 });
 
 test("blocked stops execution with a clear error", async () => {

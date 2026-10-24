@@ -56,10 +56,11 @@ Use your actual container name instead of `n8n`. The n8n container must be able 
 
 2. Add **InGravity Guard** after the Set node and before the real action.
 3. Set **InGravity API Base URL** to a URL reachable from n8n, without `/check-action`. For an API running on the same host as a non-Docker n8n instance, use `http://localhost:8080`. If InGravity is running elsewhere, use that server's reachable URL.
-4. Set **Action Type** to an expression such as `{{$json.action_type}}`.
-5. Turn on **Include Amount** and set **Amount** to `{{$json.amount}}` if the action has a numeric amount.
-6. Set **Metadata** to `{{$json.metadata}}` (or enter a JSON object directly).
-7. Connect the guard's output to the node that performs the real action. Leave the guard's **On Error** setting at **Stop Workflow**.
+4. Set **InGravity API Key** to the value of `INGRAVITY_API_KEY` (or the generated `artifacts/api-server/data/api-key` file).
+5. Set **Action Type** to an expression such as `{{$json.action_type}}`.
+6. Turn on **Include Amount** and set **Amount** to `{{$json.amount}}` if the action has a numeric amount.
+7. Set **Metadata** to `{{$json.metadata}}` (or enter a JSON object directly).
+8. Connect the guard's output to the node that performs the real action. Leave the guard's **On Error** setting at **Stop Workflow**.
 
 For a quick gate test with the default InGravity payment rule, an amount of `500` is approved and continues to the next node. An amount of `1,250` becomes `pending_approval` and stops the workflow. An amount of `100,000` is blocked and stops with an error.
 
@@ -77,4 +78,4 @@ The node sends one `POST <base URL>/check-action` request per input item with th
 }
 ```
 
-The current InGravity API does not require authentication. Do not expose an unauthenticated InGravity API to untrusted networks; add authentication before using this gate for sensitive production workflows.
+The node sends the shared API key in the `X-API-Key` header. Keep the key secret and do not commit it in a workflow export or repository.

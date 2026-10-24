@@ -1,1 +1,4 @@
-export { InGravityGuard } from "./nodes/InGravity/InGravity.node";
+export {
+  InGravity,
+  InGravityGuard,
+} from "./nodes/InGravity/InGravity.node";

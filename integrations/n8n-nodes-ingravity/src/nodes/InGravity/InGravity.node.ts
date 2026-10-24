@@ -83,6 +83,18 @@ export class InGravityGuard implements INodeType {
           "Root URL of the InGravity API. Do not include /check-action.",
       },
       {
+        displayName: "InGravity API Key",
+        name: "apiKey",
+        type: "string",
+        typeOptions: {
+          password: true,
+        },
+        default: "",
+        required: true,
+        description:
+          "Shared API key sent in the X-API-Key header to authenticate with InGravity.",
+      },
+      {
         displayName: "Action Type",
         name: "action_type",
         type: "string",
@@ -133,6 +145,7 @@ export class InGravityGuard implements INodeType {
         "apiBaseUrl",
         itemIndex,
       ) as string;
+      const apiKey = this.getNodeParameter("apiKey", itemIndex) as string;
       const actionType = this.getNodeParameter(
         "action_type",
         itemIndex,
@@ -153,6 +166,13 @@ export class InGravityGuard implements INodeType {
         throw new NodeOperationError(
           this.getNode(),
           "InGravity API Base URL is required.",
+          { itemIndex },
+        );
+      }
+      if (typeof apiKey !== "string" || apiKey.trim().length === 0) {
+        throw new NodeOperationError(
+          this.getNode(),
+          "InGravity API Key is required.",
           { itemIndex },
         );
       }
@@ -201,6 +221,9 @@ export class InGravityGuard implements INodeType {
           method: "POST",
           url: `${apiBaseUrl.trim().replace(/\/+$/, "")}/check-action`,
           body: requestBody,
+          headers: {
+            "X-API-Key": apiKey.trim(),
+          },
           json: true,
           timeout: 30000,
         });
@@ -251,3 +274,6 @@ export class InGravityGuard implements INodeType {
     return [outputItems];
   }
 }
+
+// n8n resolves the node class from the file name (InGravity.node.js).
+export class InGravity extends InGravityGuard {}
