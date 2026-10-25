@@ -55,6 +55,9 @@ paths:
                     type: integer
                     minimum: 0
                     maximum: 100
+                  explanation:
+                    type: string
+                    description: Explication facultative produite après la décision par l’Advisor local.
                 required:
                   - decision
                   - reason
@@ -100,4 +103,3 @@ components:
           type: string
       required:
         - error
-

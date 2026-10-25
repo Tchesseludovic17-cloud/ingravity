@@ -6,6 +6,7 @@ import {
 } from "../domain/check-action";
 import { recordAction } from "../repositories/action-repository";
 import { requireApiKey } from "../middlewares/api-key";
+import { explainDecision } from "../services/advisor";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -15,10 +16,10 @@ function respondWithValidationError(res: Response, reason: string): void {
   res.status(400).json({ error: reason });
 }
 
-export function checkActionHandler(
+export async function checkActionHandler(
   req: Request,
   res: Response,
-): void {
+): Promise<void> {
   if (!isRecord(req.body)) {
     respondWithValidationError(res, "Le corps de la requête doit être un objet JSON.");
     return;
@@ -57,13 +58,22 @@ export function checkActionHandler(
     ...(typeof amount === "number" ? { amount } : {}),
     metadata,
   };
-  const evaluation = evaluateAction(action, findRule(action.actionType));
-  recordAction(action, evaluation);
+  const rule = findRule(action.actionType);
+  const evaluation = evaluateAction(action, rule);
+  // This call happens strictly after evaluateAction. It cannot change the result.
+  const explanation = await explainDecision(action, rule, evaluation);
+  const finalEvaluation = explanation
+    ? { ...evaluation, explanation }
+    : evaluation;
+  recordAction(action, finalEvaluation);
 
   res.json({
-    decision: evaluation.decision,
-    reason: evaluation.reason,
-    risk_score: evaluation.riskScore,
+    decision: finalEvaluation.decision,
+    reason: finalEvaluation.reason,
+    risk_score: finalEvaluation.riskScore,
+    ...(finalEvaluation.explanation
+      ? { explanation: finalEvaluation.explanation }
+      : {}),
   });
 }
 

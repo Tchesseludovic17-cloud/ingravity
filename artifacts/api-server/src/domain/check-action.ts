@@ -22,6 +22,7 @@ export interface ActionEvaluation {
   decision: Decision;
   reason: string;
   riskScore: number;
+  explanation?: string;
 }
 
 export function evaluateAction(

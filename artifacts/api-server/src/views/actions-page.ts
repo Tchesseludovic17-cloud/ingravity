@@ -53,6 +53,7 @@ function renderActionRow(action: ActionListItem): string {
       <td class="numeric">${amount}</td>
       <td><span class="status status-${action.decision}">${decision}</span></td>
       <td class="numeric">${action.riskScore}<span class="score-total"> / 100</span></td>
+      <td>${action.explanation ? escapeHtml(action.explanation) : "—"}</td>
       <td>${controls}</td>
     </tr>`;
 }
@@ -60,7 +61,7 @@ function renderActionRow(action: ActionListItem): string {
 export function renderActionsPage(actions: ActionListItem[]): string {
   const rows =
     actions.length === 0
-      ? `<tr><td class="empty-state" colspan="6">Aucune action enregistrée pour l'instant</td></tr>`
+      ? `<tr><td class="empty-state" colspan="7">Aucune action enregistrée pour l'instant</td></tr>`
       : actions.map(renderActionRow).join("");
 
   return `<!doctype html>
@@ -140,6 +141,7 @@ export function renderActionsPage(actions: ActionListItem[]): string {
               <th scope="col">Montant</th>
               <th scope="col">Décision</th>
               <th scope="col">Score de risque</th>
+              <th scope="col">Explication Advisor</th>
               <th scope="col">Action</th>
             </tr>
           </thead>

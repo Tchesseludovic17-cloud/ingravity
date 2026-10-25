@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import {
+  getAction,
   listActions,
   updatePendingActionDecision,
   type ManualActionDecision,
@@ -9,8 +10,11 @@ import { ruleTemplates } from "../config/templates";
 import {
   activateRuleTemplate,
   addOrReplaceAmountRule,
+  applyDurableRuleProposal,
+  proposeDurableRuleChange,
 } from "../services/rule-management";
 import { renderActionsPage } from "../views/actions-page";
+import { renderApprovalChoicePage, renderDurableProposalPage } from "../views/approval-page";
 import { renderRulesPage } from "../views/rules-page";
 import { requireApiKey } from "../middlewares/api-key";
 
@@ -70,28 +74,17 @@ router.post("/rules", requireApiKey, (req, res): void => {
       actionIfExceeded !== "blocked" &&
       actionIfExceeded !== "pending_approval")
   ) {
-    res
-      .status(400)
-      .type("text")
-      .send("Type d’action, seuil ou décision invalide.");
+    res.status(400).type("text").send("Type d’action, seuil ou décision invalide.");
     return;
   }
 
   try {
-    addOrReplaceAmountRule({
-      actionType,
-      maxAmount: amount,
-      actionIfExceeded,
-    });
+    addOrReplaceAmountRule({ actionType, maxAmount: amount, actionIfExceeded });
   } catch (error) {
     res
       .status(400)
       .type("text")
-      .send(
-        error instanceof Error
-          ? error.message
-          : "Impossible d’enregistrer cette règle.",
-      );
+      .send(error instanceof Error ? error.message : "Impossible d’enregistrer cette règle.");
     return;
   }
 
@@ -99,9 +92,7 @@ router.post("/rules", requireApiKey, (req, res): void => {
 });
 
 router.post("/rules/templates/:id/activate", requireApiKey, (req, res): void => {
-  const templateId = Array.isArray(req.params.id)
-    ? req.params.id[0]
-    : req.params.id;
+  const templateId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   if (!templateId) {
     res.status(404).type("text").send("Modèle de règles introuvable.");
     return;
@@ -114,10 +105,7 @@ router.post("/rules/templates/:id/activate", requireApiKey, (req, res): void => 
       return;
     }
   } catch {
-    res
-      .status(500)
-      .type("text")
-      .send("Impossible d’enregistrer les règles du modèle.");
+    res.status(500).type("text").send("Impossible d’enregistrer les règles du modèle.");
     return;
   }
 
@@ -125,11 +113,8 @@ router.post("/rules/templates/:id/activate", requireApiKey, (req, res): void => 
 });
 
 router.post("/actions/:id/decision", requireApiKey, (req, res): void => {
-  const rawId = Array.isArray(req.params.id)
-    ? req.params.id[0]
-    : req.params.id;
+  const rawId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
   const id = Number(rawId);
-
   if (!rawId || !Number.isSafeInteger(id) || id <= 0) {
     res.status(400).type("text").send("Identifiant d’action invalide.");
     return;
@@ -142,17 +127,50 @@ router.post("/actions/:id/decision", requireApiKey, (req, res): void => {
     return;
   }
 
-  const decision: ManualActionDecision = requestedDecision;
-  const updated = updatePendingActionDecision(id, decision);
-  if (!updated) {
-    res
-      .status(409)
-      .type("text")
-      .send("Cette action n’existe pas ou a déjà été tranchée.");
+  const action = getAction(id);
+  if (!action || action.decision !== "pending_approval") {
+    res.status(409).type("text").send("Cette action n’existe pas ou a déjà été tranchée.");
     return;
   }
 
-  res.redirect(303, "/");
+  const approvalScope = isRecord(body) ? body["approval_scope"] : undefined;
+  if (requestedDecision === "approved" && approvalScope === undefined) {
+    res
+      .status(200)
+      .type("html")
+      .send(renderApprovalChoicePage(action, proposeDurableRuleChange(action)));
+    return;
+  }
+
+  if (requestedDecision === "approved" && approvalScope === "durable") {
+    const proposal = proposeDurableRuleChange(action);
+    if (!proposal) {
+      res.status(400).type("text").send("Aucune proposition durable n’est possible pour cette action.");
+      return;
+    }
+
+    const confirmed = isRecord(body) && body["confirm_rule_change"] === "yes";
+    if (!confirmed) {
+      res.status(200).type("html").send(renderDurableProposalPage(action, proposal));
+      return;
+    }
+
+    try {
+      applyDurableRuleProposal(proposal);
+    } catch (error) {
+      res.status(409).type("text").send(error instanceof Error ? error.message : "La règle n’a pas été modifiée.");
+      return;
+    }
+  }
+
+  const decision: ManualActionDecision = requestedDecision;
+  const updated = updatePendingActionDecision(id, decision);
+  if (!updated) {
+    res.status(409).type("text").send("Cette action n’existe pas ou a déjà été tranchée.");
+    return;
+  }
+
+  res.redirect(303, approvalScope === "durable" ? "/rules?notice=rule-saved" : "/");
 });
 
 export default router;

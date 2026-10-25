@@ -9,6 +9,7 @@ import type {
 } from "../domain/check-action";
 
 export interface StoredAction extends ActionInput, ActionEvaluation {
+  id?: number;
   createdAt: string;
 }
 
@@ -18,6 +19,7 @@ export interface ActionListItem {
   amount?: number;
   decision: Decision;
   riskScore: number;
+  explanation?: string;
   createdAt: string;
 }
 
@@ -46,6 +48,14 @@ database.exec(`
   );
 `);
 
+try {
+  database.exec("ALTER TABLE actions ADD COLUMN explanation TEXT");
+} catch (error) {
+  if (!(error instanceof Error) || !error.message.includes("duplicate column name")) {
+    throw error;
+  }
+}
+
 const insertAction = database.prepare(`
   INSERT INTO actions (
     action_type,
@@ -54,12 +64,13 @@ const insertAction = database.prepare(`
     decision,
     reason,
     risk_score,
+    explanation,
     created_at
-  ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const listActionsStatement = database.prepare(`
-  SELECT id, action_type, amount, decision, risk_score, created_at
+  SELECT id, action_type, amount, decision, risk_score, explanation, created_at
   FROM actions
   ORDER BY created_at DESC, id DESC
 `);
@@ -68,6 +79,12 @@ const updatePendingActionStatement = database.prepare(`
   UPDATE actions
   SET decision = ?
   WHERE id = ? AND decision = 'pending_approval'
+`);
+
+const getActionStatement = database.prepare(`
+  SELECT id, action_type, amount, metadata_json, decision, reason, risk_score, explanation, created_at
+  FROM actions
+  WHERE id = ?
 `);
 
 export function recordAction(
@@ -82,6 +99,7 @@ export function recordAction(
     evaluation.decision,
     evaluation.reason,
     evaluation.riskScore,
+    evaluation.explanation ?? null,
     createdAt,
   );
 
@@ -98,9 +116,34 @@ export function listActions(): ActionListItem[] {
       ...(amount === null ? {} : { amount: Number(amount) }),
       decision: row["decision"] as Decision,
       riskScore: Number(row["risk_score"]),
+      ...(typeof row["explanation"] === "string"
+        ? { explanation: String(row["explanation"]) }
+        : {}),
       createdAt: String(row["created_at"]),
     };
   });
+}
+
+export function getAction(id: number): (StoredAction & { id: number }) | undefined {
+  const row = getActionStatement.get(id) as Record<string, unknown> | undefined;
+  if (!row) {
+    return undefined;
+  }
+
+  const amount = row["amount"];
+  return {
+    id,
+    actionType: String(row["action_type"]),
+    ...(amount === null ? {} : { amount: Number(amount) }),
+    metadata: JSON.parse(String(row["metadata_json"])) as Record<string, unknown>,
+    decision: row["decision"] as Decision,
+    reason: String(row["reason"]),
+    riskScore: Number(row["risk_score"]),
+    ...(typeof row["explanation"] === "string"
+      ? { explanation: String(row["explanation"]) }
+      : {}),
+    createdAt: String(row["created_at"]),
+  };
 }
 
 export function updatePendingActionDecision(

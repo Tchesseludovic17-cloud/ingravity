@@ -36,9 +36,22 @@ The API's `reason` text is currently returned in French. For this request, the r
 - Rules are read from `artifacts/api-server/config/rules.json`.
 - The included payment rule approves amounts up to `1000`, sends higher amounts for approval, and blocks amounts of `100000` or more.
 - Valid requests and their decisions are recorded with a timestamp in a local SQLite database.
+- For `blocked` and `pending_approval`, the optional `explanation` field is generated after the rules engine by a local Ollama Advisor; it never changes the decision.
 - An unknown `action_type` is approved by default. A missing amount for a matching amount rule is sent for approval because its limit cannot be checked.
 
 This is an API backend, not an approval interface. It does not connect to payment systems or other external tools.
+
+### Local Advisor (Ollama)
+
+The Advisor uses Ollama at `http://127.0.0.1:11434` and the `qwen2.5:3b`
+model by default. Configure `OLLAMA_BASE_URL` and `OLLAMA_MODEL` to override
+these values. If Ollama is unavailable, the model is missing, or the request
+fails, the API continues normally and omits `explanation`.
+
+When a pending action is approved from the dashboard, the Advisor asks whether
+the approval is exceptional (one time) or durable. Exceptional approval never
+changes `rules.json`. A durable change is only proposed first and requires a
+second explicit confirmation; the Advisor never writes the rules file itself.
 
 ### API authentication
 
@@ -68,7 +81,7 @@ curl -X POST http://localhost:8080/check-action \
 
 - `/` displays the action history, newest first, with manual approve/block controls for pending actions.
 - `/rules` displays the active rules, lets users add or replace simple amount rules, and activates the three predefined templates.
-- The dashboard does not require authentication yet and is intended for local testing.
+- Read-only dashboard pages are public for local inspection; dashboard actions that approve, block, or modify rules require `X-API-Key`.
 
 ### Phase 3 — n8n integration and dry-run mode: in progress
 
