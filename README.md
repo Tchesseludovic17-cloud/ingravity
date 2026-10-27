@@ -83,20 +83,54 @@ curl -X POST http://localhost:8080/check-action \
 - `/rules` displays the active rules, lets users add or replace simple amount rules, and activates the three predefined templates.
 - Read-only dashboard pages are public for local inspection; dashboard actions that approve, block, or modify rules require `X-API-Key`.
 
-### Phase 3 — n8n integration and dry-run mode: in progress
+### Phase 3 — n8n integration and MCP Gateway: available
 
 - A local-installable **InGravity Guard** n8n node is available in [`integrations/n8n-nodes-ingravity`](integrations/n8n-nodes-ingravity/README.md). It continues only for `approved` and stops for `blocked` or `pending_approval`.
 - Dry-run mode, which would simulate an action without carrying it out, is not implemented yet.
+- The **MCP Gateway** is available directly from the API at `POST /mcp` (or `POST /api/mcp`). It exposes `ingravity_check_action`, `ingravity_list_actions`, and `ingravity_get_rules` to MCP clients without n8n.
+
+#### Connect Claude or ChatGPT directly
+
+Start the API, then configure the MCP server URL `http://localhost:8080/mcp` in a remote-MCP-capable client. The gateway accepts either the existing `X-API-Key` header or `Authorization: Bearer <api-key>`; it never exposes an unauthenticated action-evaluation tool.
+
+Example MCP initialization request:
+
+```sh
+curl -X POST http://localhost:8080/mcp \
+  -H "Authorization: Bearer your-api-key" \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"my-client","version":"1"}}}'
+```
+
+For a client that accepts a Claude-style MCP server configuration, the equivalent entry is:
+
+```json
+{
+  "mcpServers": {
+    "ingravity": {
+      "url": "http://localhost:8080/mcp",
+      "headers": { "Authorization": "Bearer your-api-key" }
+    }
+  }
+}
+```
+
+The MCP gateway calls the same decision service as the HTTP API: the deterministic rules engine decides first, Advisor explains afterward, and every evaluation is recorded in SQLite.
+
+### SQLite reliability fix
+
+SQLite initialization now runs each PRAGMA and schema operation separately, detects missing columns through `PRAGMA table_info`, and no longer relies on matching a version-specific migration error string. Writes use an explicit `BEGIN IMMEDIATE` transaction with bounded retries for `SQLITE_BUSY`/`SQLITE_LOCKED`. This protects existing databases and concurrent MCP/API requests while preserving the existing database path and schema.
 
 ## Run locally (self-hosted)
 
 ### Requirements
 
-- Node.js 24 or newer
-- pnpm 10 or newer
-- `curl` to try the API
+- Docker Engine with Docker Compose v2 (recommended method)
+- Or, for the manual alternative: Node.js 24 or newer, pnpm 10 or newer,
+  Ollama, and `curl`
 
-### Install and start
+### Recommended: one command with Docker Compose
 
 1. Clone this repository and enter its directory:
 
@@ -105,33 +139,80 @@ curl -X POST http://localhost:8080/check-action \
    cd ingravity
    ```
 
-2. Enable pnpm through Corepack, then install workspace dependencies:
+2. Start InGravity and Ollama together:
 
    ```sh
-   corepack enable
-   corepack prepare pnpm@10 --activate
-   pnpm install
+   docker compose up --build
    ```
 
-   The repository uses pnpm workspaces; run `pnpm install` from the repository root.
+   The first start builds the API image, starts Ollama, and downloads the
+   `qwen2.5:3b` model automatically. The Ollama model is kept in the named
+   `ollama-data` volume, so later starts do not download it again. InGravity
+   stores its generated API key and SQLite data in the `ingravity-data` volume.
 
-3. Start the API on port `8080`:
+3. In a second terminal, retrieve the generated API key:
 
    ```sh
-   PORT=8080 pnpm --filter @workspace/api-server run dev
+   docker compose exec ingravity cat /app/artifacts/api-server/data/api-key
    ```
 
-   Keep this terminal open while the server is running. The first start builds the API and creates the local SQLite database directory and file automatically.
-
-4. In a second terminal, send a test request:
+4. Send a test request with that key:
 
    ```sh
    curl -X POST http://localhost:8080/check-action \
+     -H "X-API-Key: $(docker compose exec -T ingravity cat /app/artifacts/api-server/data/api-key)" \
      -H 'Content-Type: application/json' \
      -d '{"action_type":"payment","amount":100000,"metadata":{"order_id":"order-123"}}'
    ```
 
-   The expected decision is `blocked`. Try `"amount":500` for `approved`, or `"amount":1250` for `pending_approval`.
+   The expected decision is `blocked`, with an `explanation` once Ollama has
+   finished downloading the model. Try `"amount":500` for `approved`, or
+   `"amount":1250` for `pending_approval`.
+
+### Alternative: manual installation without Docker
+
+Use this mode if you prefer to install each service directly on the host.
+Ollama is a required prerequisite for Advisor explanations in this mode:
+install Ollama, start it, and download the model once:
+
+In one terminal, start Ollama:
+
+```sh
+ollama serve
+```
+
+In a second terminal, download the model:
+
+```sh
+ollama pull qwen2.5:3b
+```
+
+In another terminal, install the project and start the API:
+
+```sh
+corepack enable
+corepack prepare pnpm@10 --activate
+pnpm install
+OLLAMA_BASE_URL=http://127.0.0.1:11434 \
+OLLAMA_MODEL=qwen2.5:3b \
+PORT=8080 pnpm --filter @workspace/api-server run dev
+```
+
+Keep both terminals open. If Ollama is stopped or unavailable, the API still
+returns the rules-engine decision and `reason`, but omits `explanation`.
+
+For a manual test request, first set the API key as documented above or read
+the generated key from `artifacts/api-server/data/api-key`:
+
+```sh
+curl -X POST http://localhost:8080/check-action \
+  -H 'X-API-Key: your-api-key' \
+  -H 'Content-Type: application/json' \
+  -d '{"action_type":"payment","amount":100000,"metadata":{"order_id":"order-123"}}'
+```
+
+The expected decision is `blocked`. Try `"amount":500` for `approved`, or
+`"amount":1250` for `pending_approval`.
 
 ### Local data and configuration
 

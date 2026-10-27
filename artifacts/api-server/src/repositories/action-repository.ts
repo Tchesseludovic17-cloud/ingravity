@@ -33,9 +33,13 @@ const databasePath = configuredDatabasePath
 mkdirSync(path.dirname(databasePath), { recursive: true });
 
 const database = new DatabaseSync(databasePath);
+// Keep schema setup as separate statements: node:sqlite can report the result
+// of journal_mode as a row, which made multi-statement initialization brittle
+// across Node versions.
+database.exec("PRAGMA busy_timeout = 5000");
+database.exec("PRAGMA journal_mode = WAL");
+database.exec("PRAGMA synchronous = NORMAL");
 database.exec(`
-  PRAGMA journal_mode = WAL;
-  PRAGMA busy_timeout = 5000;
   CREATE TABLE IF NOT EXISTS actions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     action_type TEXT NOT NULL,
@@ -45,15 +49,15 @@ database.exec(`
     reason TEXT NOT NULL,
     risk_score INTEGER NOT NULL CHECK (risk_score BETWEEN 0 AND 100),
     created_at TEXT NOT NULL
-  );
+  )
 `);
 
-try {
+const columns = database
+  .prepare("PRAGMA table_info(actions)")
+  .all()
+  .map((row) => String(row["name"]));
+if (!columns.includes("explanation")) {
   database.exec("ALTER TABLE actions ADD COLUMN explanation TEXT");
-} catch (error) {
-  if (!(error instanceof Error) || !error.message.includes("duplicate column name")) {
-    throw error;
-  }
 }
 
 const insertAction = database.prepare(`
@@ -87,20 +91,68 @@ const getActionStatement = database.prepare(`
   WHERE id = ?
 `);
 
+function isBusyError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const code = "code" in error ? String(error.code) : "";
+  return (
+    code === "ERR_SQLITE_BUSY" ||
+    code === "ERR_SQLITE_LOCKED" ||
+    /database is locked|database table is locked/iu.test(error.message)
+  );
+}
+
+function withBusyRetry<T>(operation: () => T): T {
+  let delayMs = 25;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      return operation();
+    } catch (error) {
+      if (!isBusyError(error) || attempt === 4) {
+        throw error;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, delayMs);
+      delayMs *= 2;
+    }
+  }
+  throw new Error("SQLite operation failed after retries.");
+}
+
+function inTransaction<T>(operation: () => T): T {
+  database.exec("BEGIN IMMEDIATE");
+  try {
+    const result = operation();
+    database.exec("COMMIT");
+    return result;
+  } catch (error) {
+    try {
+      database.exec("ROLLBACK");
+    } catch {
+      // Preserve the original SQLite error.
+    }
+    throw error;
+  }
+}
+
 export function recordAction(
   action: ActionInput,
   evaluation: ActionEvaluation,
 ): StoredAction {
   const createdAt = new Date().toISOString();
-  insertAction.run(
-    action.actionType,
-    action.amount ?? null,
-    JSON.stringify(action.metadata),
-    evaluation.decision,
-    evaluation.reason,
-    evaluation.riskScore,
-    evaluation.explanation ?? null,
-    createdAt,
+  withBusyRetry(() =>
+    inTransaction(() => {
+      insertAction.run(
+        action.actionType,
+        action.amount ?? null,
+        JSON.stringify(action.metadata),
+        evaluation.decision,
+        evaluation.reason,
+        evaluation.riskScore,
+        evaluation.explanation ?? null,
+        createdAt,
+      );
+    }),
   );
 
   return { ...action, ...evaluation, createdAt };
@@ -150,6 +202,10 @@ export function updatePendingActionDecision(
   id: number,
   decision: ManualActionDecision,
 ): boolean {
-  const result = updatePendingActionStatement.run(decision, id);
-  return Number(result.changes) > 0;
+  return withBusyRetry(() =>
+    inTransaction(() => {
+      const result = updatePendingActionStatement.run(decision, id);
+      return Number(result.changes) > 0;
+    }),
+  );
 }

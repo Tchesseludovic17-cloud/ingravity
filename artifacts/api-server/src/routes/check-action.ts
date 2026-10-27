@@ -1,12 +1,7 @@
 import { Router, type Request, type Response } from "express";
-import { findRule } from "../config/rules";
-import {
-  evaluateAction,
-  type ActionInput,
-} from "../domain/check-action";
-import { recordAction } from "../repositories/action-repository";
+import type { ActionInput } from "../domain/check-action";
 import { requireApiKey } from "../middlewares/api-key";
-import { explainDecision } from "../services/advisor";
+import { evaluateAndRecordAction } from "../services/action-evaluation";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -58,14 +53,7 @@ export async function checkActionHandler(
     ...(typeof amount === "number" ? { amount } : {}),
     metadata,
   };
-  const rule = findRule(action.actionType);
-  const evaluation = evaluateAction(action, rule);
-  // This call happens strictly after evaluateAction. It cannot change the result.
-  const explanation = await explainDecision(action, rule, evaluation);
-  const finalEvaluation = explanation
-    ? { ...evaluation, explanation }
-    : evaluation;
-  recordAction(action, finalEvaluation);
+  const finalEvaluation = await evaluateAndRecordAction(action);
 
   res.json({
     decision: finalEvaluation.decision,

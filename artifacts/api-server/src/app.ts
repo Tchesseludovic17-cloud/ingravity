@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { checkActionHandler } from "./routes/check-action";
 import dashboardRouter from "./routes/dashboard";
+import mcpRouter from "./routes/mcp";
 import { logger } from "./lib/logger";
 import { requireApiKey } from "./middlewares/api-key";
 
@@ -36,8 +37,10 @@ app.use(dashboardRouter);
 
 // The direct path is available for the requested POST /check-action endpoint.
 app.post("/check-action", requireApiKey, checkActionHandler);
+app.use(mcpRouter);
 
 // Keep the workspace's existing /api namespace working as well.
 app.use("/api", router);
+app.use("/api", mcpRouter);
 
 export default app;

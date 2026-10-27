@@ -49,7 +49,7 @@ export async function initializeApiKey(): Promise<{ key: string; source: string 
   };
 }
 
-function hasValidApiKey(candidate: string | undefined): boolean {
+export function hasValidApiKey(candidate: string | undefined): boolean {
   if (!configuredApiKey || !candidate) {
     return false;
   }
