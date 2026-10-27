@@ -17,6 +17,7 @@ import { renderActionsPage } from "../views/actions-page";
 import { renderApprovalChoicePage, renderDurableProposalPage } from "../views/approval-page";
 import { renderRulesPage } from "../views/rules-page";
 import { requireApiKey } from "../middlewares/api-key";
+import { askAdvisor } from "../services/advisor";
 
 const router: IRouter = Router();
 
@@ -30,6 +31,26 @@ router.get("/", (_req, res): void => {
     .set("Cache-Control", "no-store")
     .type("html")
     .send(renderActionsPage(listActions()));
+});
+
+router.post("/advisor/chat", async (req, res): Promise<void> => {
+  const body: unknown = req.body;
+  const question =
+    isRecord(body) && typeof body["question"] === "string"
+      ? body["question"].trim()
+      : "";
+
+  if (question.length === 0 || question.length > 1_000) {
+    res.status(400).type("text").send("La question Advisor doit contenir entre 1 et 1000 caractères.");
+    return;
+  }
+
+  const answer = await askAdvisor(question, listActions(), getActiveRules());
+  res
+    .status(200)
+    .set("Cache-Control", "no-store")
+    .type("html")
+    .send(renderActionsPage(listActions(), { question, answer }));
 });
 
 router.get("/rules", (req, res): void => {
