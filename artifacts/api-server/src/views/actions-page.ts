@@ -145,7 +145,18 @@ export function renderActionsPage(actions: ActionListItem[], chat?: AdvisorChatS
     main { width: min(1320px, calc(100% - 64px)); margin: 0 auto; padding: 35px 0 80px; }
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-bottom: 19px; border-bottom: 1px solid #cfc8ba; }
     .brand { display: flex; align-items: center; gap: 12px; color: #191919; text-decoration: none; }
-    .brand-mark { display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid #191919; color: #f5f2eb; background: #191919; font: 800 12px/1 Inter, sans-serif; letter-spacing: -.08em; }
+    .brand-mark { position: relative; display: block; width: 36px; height: 36px; border: 1px solid #191919; background: #191919; }
+    .mesh-edge { position: absolute; height: 1px; transform-origin: left center; background: #f5f2eb; opacity: .82; }
+    .mesh-edge-a { left: 10px; top: 10px; width: 17px; transform: rotate(0deg); }
+    .mesh-edge-b { left: 10px; top: 10px; width: 17px; transform: rotate(61deg); }
+    .mesh-edge-c { left: 10px; top: 10px; width: 17px; transform: rotate(119deg); }
+    .mesh-edge-d { left: 10px; top: 10px; width: 17px; transform: rotate(180deg); }
+    .mesh-edge-e { left: 10px; top: 10px; width: 17px; transform: rotate(239deg); }
+    .mesh-edge-f { left: 10px; top: 10px; width: 17px; transform: rotate(301deg); }
+    .mesh-node { position: absolute; width: 6px; height: 6px; border: 1px solid #191919; border-radius: 50%; background: #f5f2eb; }
+    .mesh-node-center { left: 15px; top: 15px; width: 7px; height: 7px; background: #d96b43; }
+    .mesh-node-1 { left: 7px; top: 7px; } .mesh-node-2 { left: 23px; top: 7px; } .mesh-node-3 { left: 25px; top: 20px; }
+    .mesh-node-4 { left: 15px; top: 26px; } .mesh-node-5 { left: 4px; top: 20px; }
     .brand-name { font: 700 18px/1 Georgia, "Times New Roman", serif; letter-spacing: -.02em; }
     .brand-caption { margin-top: 4px; color: #796f62; font-size: 10px; letter-spacing: .13em; text-transform: uppercase; }
     .page-nav { display: flex; gap: 22px; align-items: center; }
@@ -209,7 +220,7 @@ export function renderActionsPage(actions: ActionListItem[], chat?: AdvisorChatS
 </head>
 <body>
   <main>
-    <header class="topbar"><a class="brand" href="/" aria-label="InGravity — cockpit"><span class="brand-mark">InG</span><span><span class="brand-name">InGravity</span><span class="brand-caption">Security intelligence / local control</span></span></a><nav class="page-nav" aria-label="Navigation principale"><a href="/" aria-current="page">Cockpit</a><a href="/rules">Règles actives</a></nav></header>
+    <header class="topbar"><a class="brand" href="/" aria-label="InGravity — cockpit"><span class="brand-mark" aria-label="Mesh topology"><span class="mesh-edge mesh-edge-a"></span><span class="mesh-edge mesh-edge-b"></span><span class="mesh-edge mesh-edge-c"></span><span class="mesh-edge mesh-edge-d"></span><span class="mesh-edge mesh-edge-e"></span><span class="mesh-edge mesh-edge-f"></span><span class="mesh-node mesh-node-center"></span><span class="mesh-node mesh-node-1"></span><span class="mesh-node mesh-node-2"></span><span class="mesh-node mesh-node-3"></span><span class="mesh-node mesh-node-4"></span><span class="mesh-node mesh-node-5"></span></span><span><span class="brand-name">InGravity</span><span class="brand-caption">Security intelligence / local control</span></span></a><nav class="page-nav" aria-label="Navigation principale"><a href="/" aria-current="page">Cockpit</a><a href="/rules">Règles actives</a></nav></header>
     <section class="hero"><div><p class="eyebrow">Security intelligence</p><h1>Une lecture claire des décisions à risque.</h1><p class="hero-copy">InGravity observe les actions proposées par vos agents, applique vos règles et conserve une trace intelligible de chaque choix.</p></div><p class="date-note mono">LIVE / RULE ENGINE + ADVISOR</p></section>
     <section class="kpi-grid" aria-label="Indicateurs clés"><article class="kpi"><span class="kpi-label">Actions évaluées</span><div class="kpi-value">${total}</div><p class="kpi-note">Historique local complet</p></article><article class="kpi kpi-warn"><span class="kpi-label">En attente</span><div class="kpi-value">${pending}</div><p class="kpi-note">Validation humaine requise</p></article><article class="kpi kpi-alert"><span class="kpi-label">Bloquées</span><div class="kpi-value">${blocked}</div><p class="kpi-note">Règle de sécurité déclenchée</p></article></section>
     <section class="primary-grid"><article class="panel chart-panel"><div class="panel-header"><div><p class="section-kicker">Tendance · 7 derniers jours</p><h2>Incidents de sécurité</h2></div><span class="panel-meta mono">${explained} explications Advisor</span></div><div class="chart" aria-label="Tendance des incidents de sécurité">${renderTrendChart(actions)}</div><div class="chart-legend"><span class="legend-item">Décisions à risque</span><span class="legend-item blocked">Blocages</span></div></article><aside class="panel snapshot-panel"><div class="panel-header"><div><p class="section-kicker">Snapshot</p><h2>État du système</h2></div></div><ul class="snapshot-list"><li><strong>${approved}</strong><span>actions approuvées<br>par les règles</span></li><li><strong>${pending + blocked}</strong><span>actions nécessitant<br>une lecture humaine</span></li><li><strong>${escapeHtml(getAdvisorModel())}</strong><span>modèle local<br>Advisor configuré</span></li></ul></aside></section>
