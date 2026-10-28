@@ -118,6 +118,10 @@ For a client that accepts a Claude-style MCP server configuration, the equivalen
 
 The MCP gateway calls the same decision service as the HTTP API: the deterministic rules engine decides first, Advisor explains afterward, and every evaluation is recorded in SQLite.
 
+### Resources and ecosystem watchlist
+
+InGravity maintains a curated index of public GitHub Awesome lists covering agent security, runtime governance, authorization policies, MCP and tool security, sandboxing, observability, evaluation, and red teaming. See [`docs/awesome-agent-security-governance.md`](docs/awesome-agent-security-governance.md). The index records repository status and scope limitations; inclusion is not an independent validation of every linked project.
+
 ### SQLite reliability fix
 
 SQLite initialization now runs each PRAGMA and schema operation separately, detects missing columns through `PRAGMA table_info`, and no longer relies on matching a version-specific migration error string. Writes use an explicit `BEGIN IMMEDIATE` transaction with bounded retries for `SQLITE_BUSY`/`SQLITE_LOCKED`. This protects existing databases and concurrent MCP/API requests while preserving the existing database path and schema.
